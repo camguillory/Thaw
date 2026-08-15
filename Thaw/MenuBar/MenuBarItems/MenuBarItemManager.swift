@@ -10821,6 +10821,23 @@ extension MenuBarItemManager {
             return false
         }
 
+        // Same judgement as applyProfileLayout / saveSectionOrder (#849):
+        // without the always-hidden divider, findSection cannot see that
+        // boundary. Returning true after a no-op apply would burn the one
+        // settling-period early apply and skip the rest of the cache cycle.
+        let alwaysHiddenSectionNeeded =
+            !(effectiveSavedOrder[sectionKey(for: .alwaysHidden)] ?? []).isEmpty
+            || (appState?.menuBarManager.section(withName: .alwaysHidden)?.isEnabled ?? false)
+        guard LayoutSolver.isAlwaysHiddenSectionResolved(
+            hasAlwaysHiddenControlItem: controlItems.alwaysHidden != nil,
+            isAlwaysHiddenSectionEnabled: alwaysHiddenSectionNeeded
+        ) else {
+            MenuBarItemManager.diagLog.warning(
+                "applySavedLayout: skipping (\(trigger)); always-hidden divider unresolved while its section is needed"
+            )
+            return false
+        }
+
         // Display-spread gate. While the active menu bar relocates to another
         // display macOS migrates the status item windows between screens
         // asynchronously, so the items transiently straddle two displays. A

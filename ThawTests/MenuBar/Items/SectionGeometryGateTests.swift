@@ -310,11 +310,14 @@ struct SectionGeometryApplyGateTests {
     /// one test-visible writer; concluding it immediately afterwards clears
     /// `isApplyingProfileLayout`, which would otherwise short-circuit
     /// `applySavedLayout` before it reaches the geometry gate.
-    private func makeManager(savingAllOf items: [MenuBarItem]) -> MenuBarItemManager {
+    private func makeManager(
+        savingAllOf items: [MenuBarItem],
+        in section: String = "hidden"
+    ) -> MenuBarItemManager {
         let order = [
             "visible": [String](),
-            "hidden": items.map(\.uniqueIdentifier),
-            "alwaysHidden": [String](),
+            "hidden": section == "hidden" ? items.map(\.uniqueIdentifier) : [String](),
+            "alwaysHidden": section == "alwaysHidden" ? items.map(\.uniqueIdentifier) : [String](),
         ]
         let manager = MenuBarItemManager()
         manager.armProfileState(
@@ -385,6 +388,32 @@ struct SectionGeometryApplyGateTests {
             #expect(
                 didApply,
                 "Healthy divider geometry must still dispatch the bulk apply"
+            )
+        }
+    }
+
+    /// `applyProfileLayout` already skips when the always-hidden divider is
+    /// missing. `applySavedLayout` used to return `true` after that no-op,
+    /// which spent the one settling-period early apply and skipped the rest
+    /// of the cache cycle. `false` keeps the retry path alive.
+    @Test("An unresolved always-hidden divider stops the apply before it dispatches", .timeLimit(.minutes(1)))
+    func unresolvedAlwaysHiddenDividerBlocksTheApply() async throws {
+        try await withScratchDefaults { _ in
+            let items = Self.makeItems()
+            let manager = makeManager(savingAllOf: items, in: "alwaysHidden")
+            let withoutAlwaysHidden = MenuBarItemManager.ControlItemPair.fixture(
+                hiddenAt: CGRect(x: -5743, y: 0, width: 10, height: 22)
+            )
+
+            let didApply = await manager.applySavedLayout(
+                items: items,
+                previousWindowIDs: [Self.departedWindowID],
+                controlItems: withoutAlwaysHidden
+            )
+
+            #expect(
+                !didApply,
+                "A saved always-hidden section must refuse the bulk apply until its divider is present"
             )
         }
     }
