@@ -24,7 +24,9 @@ nonisolated enum MenuBarPositionStoreProvider {
     /// move and enumeration paths, and both wrappers are cheap only if they are
     /// not re-boxed per call.
     @MainActor
-    private static let live: any MenuBarPositionStoring = RuntimePositionStoreAdapter()
+    private static let live: any MenuBarPositionStoring = OwnerScopedPositionStore(
+        wrapping: RuntimePositionStoreAdapter()
+    )
 
     /// live with its ordering writes refused, for manual arrangement.
     @MainActor
