@@ -235,6 +235,26 @@ line is ahead of the shipping app's, so the stable feed offers nothing newer
 and Sparkle stays put. Returning to the shipping app is a reinstall, which is
 worth saying wherever alpha is advertised.
 
+### Alpha 7 recovery bridge
+
+The shipped `3.0.0-alpha.7` (build 108, source stamp `b03a2c1-dirty`)
+hard-codes `allowedChannels` to `alpha`, ignoring saved channel preferences.
+Beta 1 introduced the channel picker, but its `beta` appcast tag prevented
+alpha 7 from discovering that update.
+
+`3.0.0-beta.1` (build 111) is therefore an intentional exception: its canonical
+appcast entry has **no channel tag**. This makes the existing signed payload
+reachable from alpha 7 without rebuilding it or duplicating its entry. Its
+`minimumSystemVersion` remains `27.0`, so macOS 26 cannot receive it. All
+channels on macOS 27 can receive this recovery build, including Stable.
+The preparation action reapplies this exception on every release.
+
+This repairs discovery, not saved preferences. After updating, users with a
+saved Alpha/Nightly selection must choose **Beta** in About Thaw to receive
+subsequent beta-tagged releases. A future channel migration must itself be
+reachable from those installed clients; shipping it only on Beta repeats the
+same failure.
+
 ## Legacy installs
 
 Older builds may still poll `https://stonerl.github.io/Thaw/appcast.xml`
@@ -255,8 +275,9 @@ Only **new** items point at `thaw-app/updates` releases.
 ## Appcast preparation
 
 The local [`prepare-appcasts`](../.github/actions/prepare-appcasts/action.yml)
-action owns both appcast rules: reapply missing macOS 26 caps to 2.x entries,
-and generate a 1.x/2.x-only legacy feed when releasing a 2.x tag. It uses Python's
+action reapplies missing macOS 26 caps to 2.x entries, keeps the beta 1 recovery
+bridge untagged, and generates a 1.x/2.x-only legacy feed when releasing a 2.x
+tag. It uses Python's
 standard-library XML parser without external dependencies. Its two output paths
 feed publishing, dry-run comparisons, and artifact uploads.
 

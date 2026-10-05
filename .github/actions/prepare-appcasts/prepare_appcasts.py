@@ -30,6 +30,16 @@ def prepare_appcasts(xml: bytes, release_tag: str) -> tuple[bytes, bytes | None]
             if not version:
                 raise ValueError("Appcast item has an empty sparkle:shortVersionString")
 
+            # Alpha 7 accepts only alpha and untagged items. Keep beta 1 reachable
+            # even if generate_appcast restores its original beta channel.
+            if version == "3.0.0-beta.1":
+                minimums = sparkle_elements(item, "minimumSystemVersion")
+                if len(minimums) != 1 or minimums[0].firstChild is None or minimums[0].firstChild.data.strip() != "27.0":
+                    raise ValueError("3.0.0-beta.1 recovery bridge requires macOS 27.0")
+                for channel in sparkle_elements(item, "channel"):
+                    item.removeChild(channel)
+                    channel.unlink()
+
             # generate_appcast can rewrite prior entries, so reapply missing caps on every run.
             if version.startswith("2.") and not sparkle_elements(item, "maximumSystemVersion"):
                 minimums = sparkle_elements(item, "minimumSystemVersion")
