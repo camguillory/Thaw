@@ -235,25 +235,25 @@ line is ahead of the shipping app's, so the stable feed offers nothing newer
 and Sparkle stays put. Returning to the shipping app is a reinstall, which is
 worth saying wherever alpha is advertised.
 
-### Alpha 7 recovery bridge
+### Getting alpha 7 users onto beta 1
 
-The shipped `3.0.0-alpha.7` (build 108, source stamp `b03a2c1-dirty`)
-hard-codes `allowedChannels` to `alpha`, ignoring saved channel preferences.
-Beta 1 introduced the channel picker, but its `beta` appcast tag prevented
-alpha 7 from discovering that update.
+`3.0.0-alpha.7` (build 108, source stamp `b03a2c1-dirty`) sets
+`allowedChannels` to `alpha` and ignores saved channel preferences. Beta 1
+added a channel picker, but alpha 7 couldn't find the update because its
+appcast entry was tagged `beta`.
 
-`3.0.0-beta.1` (build 111) is therefore an intentional exception: its canonical
-appcast entry has **no channel tag**. This makes the existing signed payload
-reachable from alpha 7 without rebuilding it or duplicating its entry. Its
-`minimumSystemVersion` remains `27.0`, so macOS 26 cannot receive it. All
-channels on macOS 27 can receive this recovery build, including Stable.
-The preparation action reapplies this exception on every release.
+The canonical appcast now lists `3.0.0-beta.1` (build 111) without a channel
+tag, so alpha 7 can find it. The signed download is unchanged, and there is
+still only one entry for this build. Its `minimumSystemVersion` stays at
+`27.0`: every channel on macOS 27 can receive it, including Stable, while
+macOS 26 remains excluded. The preparation action keeps this entry untagged
+on every release.
 
-This repairs discovery, not saved preferences. After updating, users with a
-saved Alpha/Nightly selection must choose **Beta** in About Thaw to receive
-subsequent beta-tagged releases. A future channel migration must itself be
-reachable from those installed clients; shipping it only on Beta repeats the
-same failure.
+Users who previously selected Alpha/Nightly still need to choose **Beta** in
+About Thaw after updating to receive later betas. The feed change cannot
+change their saved preference. Any future update that migrates that preference
+must also reach Alpha/Nightly subscribers; an update published only on Beta
+would leave them stuck again.
 
 ## Legacy installs
 
